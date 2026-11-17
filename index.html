@@ -110,7 +110,11 @@ let VOICES=[],UT=[],unlocked=false,warned=false;
 function loadVoices(){try{VOICES=speechSynthesis.getVoices()||[]}catch(e){}}
 try{loadVoices();speechSynthesis.onvoiceschanged=loadVoices}catch(e){}
 document.addEventListener('pointerdown',()=>{if(unlocked)return;unlocked=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}},true);
+const AU=new Audio();AU.preload='auto';
+const slug=t=>t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 function speak(t){
+  try{AU.pause();AU.onerror=()=>tts(t);AU.src='audio/'+slug(t)+'.mp3';const p=AU.play();if(p&&p.catch)p.catch(()=>tts(t))}catch(e){tts(t)}}
+function tts(t){
   if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined'){if(!warned){warned=true;toast('הדפדפן לא תומך בקול')}return}
   try{
     const ss=speechSynthesis;loadVoices();

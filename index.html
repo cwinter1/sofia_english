@@ -106,7 +106,25 @@ const rnd=a=>a[Math.floor(Math.random()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 function drawStars(){const s=document.getElementById('stars');s.textContent='⭐ '+stars}
 function addStar(n=1){stars+=n;try{localStorage.setItem('sofia_stars',stars)}catch(e){}drawStars();const s=document.getElementById('stars');s.classList.remove('pop');void s.offsetWidth;s.classList.add('pop')}
-function speak(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.85;const v=speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith('en'));if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){}}
+let VOICES=[],UT=[],unlocked=false,warned=false;
+function loadVoices(){try{VOICES=speechSynthesis.getVoices()||[]}catch(e){}}
+try{loadVoices();speechSynthesis.onvoiceschanged=loadVoices}catch(e){}
+document.addEventListener('pointerdown',()=>{if(unlocked)return;unlocked=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}},true);
+function speak(t){
+  if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined'){if(!warned){warned=true;toast('הדפדפן לא תומך בקול')}return}
+  try{
+    const ss=speechSynthesis;loadVoices();
+    if(ss.speaking||ss.pending)ss.cancel();
+    if(ss.paused)ss.resume();
+    setTimeout(()=>{
+      const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.85;u.volume=1;
+      const en=VOICES.filter(v=>/^en/i.test((v.lang||'').replace('_','-')));
+      const v=en.find(v=>(v.lang||'').replace('_','-')==='en-US')||en[0];
+      if(v)u.voice=v;
+      else if(VOICES.length&&!warned){warned=true;toast('אין קול באנגלית במכשיר')}
+      UT.push(u);u.onend=u.onerror=()=>{UT=UT.filter(x=>x!==u)};
+      ss.speak(u)},80);
+  }catch(e){}}
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),1000)}
 const pool=c=>WORDS.filter(w=>(c||CAT)==='all'||w.cat===(c||CAT));
 const topbar=(title,right='')=>`<div class="top"><button class="back" id="bk">🏠</button><b>${title}</b><span>${right}</span></div>`;
